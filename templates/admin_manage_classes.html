@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>开课管理 - {{ course_info.course_name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .form-section { margin-bottom: 40px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: inline-block; width: 120px; text-align: right; margin-right: 10px; }
+        input, select { padding: 5px; width: 200px; }
+        button { padding: 8px 15px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .delete-btn, 
+        .detail-btn { 
+            padding: 8px 15px; 
+            color: white; 
+            border: none; 
+            border-radius: 3px; 
+            cursor: pointer; 
+            margin-left: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .delete-btn { background: #d9534f; }
+        .delete-btn:hover { background: #c9302c; }
+        .detail-btn { background: #5cb85c; }
+        .detail-btn:hover { background: #449d44; }
+        .error { color: red; margin: 10px 0; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a { margin: 0 10px; text-decoration: none; color: #007cba; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>开课管理 - {{ course_info.course_name }}</h1>
+            <p>课程ID: {{ course_id }}</p>
+            <p>欢迎，用户ID: {{ user_id if user_id else session['user_id'] }}</p>
+        </div>
+        
+        <div class="nav">
+            <a href="{{ url_for('home') }}">首页</a>
+            <a href="{{ url_for('admin_manage_courses') }}">课程管理</a>
+        </div>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <!-- 添加开课表单 -->
+        <div class="form-section">
+            <h2>添加开课</h2>
+            <form method="post">
+                <input type="hidden" name="action" value="add">
+                <div class="form-group">
+                    <label for="semester">学期:</label>
+                    <input type="text" id="semester" name="semester" required placeholder="如：2023-2024秋季">
+                </div>
+                <div class="form-group">
+                    <label for="staff_id">授课教师:</label>
+                    <select id="staff_id" name="staff_id" required>
+                        {% for teacher in teachers %}
+                            <option value="{{ teacher.staff_id }}">{{ teacher.teacher_name }} ({{ teacher.staff_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="class_time">上课时间:</label>
+                    <input type="text" id="class_time" name="class_time" required placeholder="如：星期三5-8">
+                </div>
+                <div class="form-group">
+                    <button type="submit">添加开课</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 开课列表 -->
+        <div>
+            <h2>开课列表</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>学期</th>
+                        <th>授课教师</th>
+                        <th>上课时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in classes %}
+                    <tr>
+                        <td>{{ class.semester }}</td>
+                        <td>{{ class.teacher_name }} ({{ class.staff_id }})</td>
+                        <td>{{ class.class_time }}</td>
+                        <td>
+                            <form method="post" style="display: inline;" onsubmit="return confirm('确定要删除该开课信息吗？此操作将同时删除相关的选课记录！')">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="semester" value="{{ class.semester }}">
+                                <input type="hidden" name="staff_id" value="{{ class.staff_id }}">
+                                <button type="submit" class="delete-btn">删除</button>
+                            </form>
+                            <a href="{{ url_for('admin_course_detail', course_id=course_id, staff_id=class.staff_id, semester=class.semester) }}" class="detail-btn">查看详情</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

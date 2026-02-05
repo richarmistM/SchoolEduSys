@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>教师 - 成绩录入</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background: #f0f0f0; }
+        input { width: 60px; text-align: center; }
+        button { padding: 5px 10px; background: #007bff; color: white; border: none; cursor: pointer; margin: 2px; }
+        .course-selector { margin: 20px 0; }
+        .error { color: red; margin: 10px 0; }
+        .section { margin: 20px 0; }
+        .status-message { color: #d9534f; padding: 10px; background: #f9f9f9; border-radius: 5px; margin: 10px 0; }
+        .calculate-btn { background: #5cb85c; }
+        .calculate-btn:hover { background: #449d44; }
+    </style>
+</head>
+<body>
+    <h2>教师成绩录入</h2>
+    
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+    
+    <!-- 课程选择 -->
+    <div class="course-selector">
+        <label for="course-select">选择课程: </label>
+        <select id="course-select" onchange="selectCourse()">
+            {% for course in courses %}
+                <option value="{{ course.course_id }}|{{ course.semester }}" 
+                    {% if selected_course and selected_course.course_id == course.course_id and selected_course.semester == course.semester %}selected{% endif %}>
+                    {{ course.course_name }} - {{ course.semester }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    {% if selected_course %}
+        <!-- 学生成绩列表 -->
+        <div class="section">
+            <h3>{{ selected_course.course_name }} - {{ selected_course.semester }} 学生成绩</h3>
+            
+            {% if not allow_teacher_modify_scores %}
+                <p class="status-message">注意：当前不允许修改成绩，请联系管理员开启此功能</p>
+            {% endif %}
+            
+            {% if allow_teacher_modify_scores %}
+                <!-- 手动计算总评成绩按钮 -->
+                <form method="post" style="margin: 10px 0;">
+                    <input type="hidden" name="action" value="calculate_totals">
+                    <button type="submit" class="calculate-btn" onclick="return confirm('确定要重新计算所有学生的总评成绩吗？')">手动计算总评成绩</button>
+                    <p><small>说明：根据平时成绩30% + 考试成绩70%的比例计算总评成绩</small></p>
+                </form>
+            {% endif %}
+            
+            <table>
+                <tr>
+                    <th>学号</th>
+                    <th>学生姓名</th>
+                    <th>平时成绩</th>
+                    <th>考试成绩</th>
+                    <th>总评成绩</th>
+                    {% if allow_teacher_modify_scores %}<th>操作</th>{% endif %}
+                </tr>
+                {% for student in students %}
+                <tr>
+                    <td>{{ student.student_id }}</td>
+                    <td>{{ student.student_name }}</td>
+                    {% if allow_teacher_modify_scores %}
+                        <form method="post">
+                            <input type="hidden" name="action" value="update_scores">
+                            <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                            <input type="hidden" name="semester" value="{{ student.semester }}">
+                            <input type="hidden" name="course_id" value="{{ student.course_id }}">
+                            <td><input type="number" name="normal_score" min="0" max="100" value="{{ student.normal_score or '' }}"></td>
+                            <td><input type="number" name="test_score" min="0" max="100" value="{{ student.test_score or '' }}"></td>
+                            <td>{{ student.total_score or '未录入' }}</td>
+                            <td><button type="submit">保存</button></td>
+                        </form>
+                    {% else %}
+                        <td>{{ student.normal_score or '未录入' }}</td>
+                        <td>{{ student.test_score or '未录入' }}</td>
+                        <td>{{ student.total_score or '未录入' }}</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% else %}
+        <p>您还没有开设任何课程</p>
+    {% endif %}
+    
+    <a href="/home"><button>返回首页</button></a>
+    
+    <script>
+        function selectCourse() {
+            var select = document.getElementById('course-select');
+            var value = select.value;
+            var parts = value.split('|');
+            var course_id = parts[0];
+            var semester = parts[1];
+            
+            // 重新加载页面并传递课程信息
+            window.location.href = '?course_id=' + course_id + '&semester=' + semester;
+        }
+    </script>
+</body>
+</html>

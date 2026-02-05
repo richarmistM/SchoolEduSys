@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>管理员 - 课程管理</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .form-section { margin-bottom: 40px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: inline-block; width: 120px; text-align: right; margin-right: 10px; }
+        input, select { padding: 5px; width: 200px; }
+        button { padding: 8px 15px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .delete-btn { background: #d9534f; }
+        .delete-btn:hover { background: #c9302c; }
+        .detail-btn { background: #5cb85c; }
+        .detail-btn:hover { background: #449d44; }
+        .error { color: red; margin: 10px 0; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a { margin: 0 10px; text-decoration: none; color: #007cba; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>管理员 - 课程管理</h1>
+            <p>欢迎，用户ID: {{ user_id if user_id else session['user_id'] }}</p>
+        </div>
+        
+        <div class="nav">
+            <a href="{{ url_for('home') }}">首页</a>
+            <a href="{{ url_for('admin_stats') }}">统计分析</a>
+            <a href="{{ url_for('admin_manage_students') }}">学生管理</a>
+            <a href="{{ url_for('admin_manage_teachers') }}">教师管理</a>
+            <a href="{{ url_for('admin_manage_departments') }}">院系管理</a>
+        </div>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <!-- 搜索表单 -->
+        <div class="form-section">
+            <h2>搜索课程</h2>
+            <form method="get" style="display: flex; align-items: center;">
+                <div class="form-group" style="margin-right: 15px;">
+                    <input type="text" name="search" value="{{ search_query or '' }}" placeholder="输入课程号或课程名称" style="width: 300px;">
+                </div>
+                <div class="form-group">
+                    <button type="submit">搜索</button>
+                    <a href="{{ url_for('admin_manage_courses') }}" style="margin-left: 10px;">清除搜索</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- 添加课程表单 -->
+        <div class="form-section">
+            <h2>添加课程</h2>
+            <form method="post">
+                <input type="hidden" name="action" value="add">
+                <div class="form-group">
+                    <label for="course_id">课程ID:</label>
+                    <input type="text" id="course_id" name="course_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="course_name">课程名称:</label>
+                    <input type="text" id="course_name" name="course_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="credit">学分:</label>
+                    <input type="number" id="credit" name="credit" value="4" min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label for="credit_hours">学时:</label>
+                    <input type="number" id="credit_hours" name="credit_hours" value="40" min="1" max="200">
+                </div>
+                <div class="form-group">
+                    <label for="dept_id">开课院系:</label>
+                    <select id="dept_id" name="dept_id" required>
+                        {% for dept in departments %}
+                            <option value="{{ dept.dept_id }}">{{ dept.dept_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit">添加课程</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 课程列表 -->
+        <div>
+            <h2>课程列表</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>课程ID</th>
+                        <th>课程名称</th>
+                        <th>学分</th>
+                        <th>学时</th>
+                        <th>开课院系</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr>
+                        <td>{{ course.course_id }}</td>
+                        <td>{{ course.course_name }}</td>
+                        <td>{{ course.credit }}</td>
+                        <td>{{ course.credit_hours }}</td>
+                        <td>{{ course.dept_name or 'N/A' }}</td>
+                        <td>
+                            <form method="post" style="display: inline;" onsubmit="return confirm('确定要删除该课程吗？此操作将同时删除相关的开课和选课记录！')">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="course_id" value="{{ course.course_id }}">
+                                <button type="submit" class="delete-btn">删除</button>
+                            </form>
+                            <form method="get" action="{{ url_for('admin_manage_classes', course_id=course.course_id) }}" style="display: inline;">
+                                <button type="submit" class="detail-btn">开课管理</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

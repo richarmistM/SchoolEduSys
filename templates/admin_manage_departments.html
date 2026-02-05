@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>管理员 - 院系管理</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .form-section { margin-bottom: 40px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: inline-block; width: 120px; text-align: right; margin-right: 10px; }
+        input, select { padding: 5px; width: 200px; }
+        button { padding: 8px 15px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .delete-btn { background: #d9534f; }
+        .delete-btn:hover { background: #c9302c; }
+        .error { color: red; margin: 10px 0; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a { margin: 0 10px; text-decoration: none; color: #007cba; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>管理员 - 院系管理</h1>
+            <p>欢迎，用户ID: {{ user_id if user_id else session['user_id'] }}</p>
+        </div>
+        
+        <div class="nav">
+            <a href="{{ url_for('home') }}">首页</a>
+            <a href="{{ url_for('admin_stats') }}">统计分析</a>
+            <a href="{{ url_for('admin_manage_students') }}">学生管理</a>
+            <a href="{{ url_for('admin_manage_teachers') }}">教师管理</a>
+            <a href="{{ url_for('admin_manage_courses') }}">课程管理</a>
+        </div>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <!-- 添加院系表单 -->
+        <div class="form-section">
+            <h2>添加院系</h2>
+            <form method="post">
+                <input type="hidden" name="action" value="add">
+                <div class="form-group">
+                    <label for="dept_id">院系ID:</label>
+                    <input type="text" id="dept_id" name="dept_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="dept_name">院系名称:</label>
+                    <input type="text" id="dept_name" name="dept_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">地址:</label>
+                    <input type="text" id="address" name="address">
+                </div>
+                <div class="form-group">
+                    <label for="phone_code">电话:</label>
+                    <input type="text" id="phone_code" name="phone_code">
+                </div>
+                <div class="form-group">
+                    <button type="submit">添加院系</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 院系列表 -->
+        <div>
+            <h2>院系列表</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>院系ID</th>
+                        <th>院系名称</th>
+                        <th>地址</th>
+                        <th>电话</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dept in departments %}
+                    <tr>
+                        <td>{{ dept.dept_id }}</td>
+                        <td>{{ dept.dept_name }}</td>
+                        <td>{{ dept.address or 'N/A' }}</td>
+                        <td>{{ dept.phone_code or 'N/A' }}</td>
+                        <td>
+                            <form method="post" style="display: inline;" onsubmit="return confirm('确定要删除该院系吗？此操作将影响相关学生和教师信息！')">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="dept_id" value="{{ dept.dept_id }}">
+                                <button type="submit" class="delete-btn">删除</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

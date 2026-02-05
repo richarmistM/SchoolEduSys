@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>管理员 - 学生管理</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .form-section { margin-bottom: 40px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: inline-block; width: 120px; text-align: right; margin-right: 10px; }
+        input, select { padding: 5px; width: 200px; }
+        button { padding: 8px 15px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .delete-btn { background: #d9534f; }
+        .delete-btn:hover { background: #c9302c; }
+        .reset-btn { background: #5bc0de; }
+        .reset-btn:hover { background: #31b0d5; }
+        .error { color: red; margin: 10px 0; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a { margin: 0 10px; text-decoration: none; color: #007cba; }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 300px;
+            border-radius: 5px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>管理员 - 学生管理</h1>
+            <p>欢迎，用户ID: {{ user_id if user_id else session['user_id'] }}</p>
+        </div>
+        
+        <div class="nav">
+            <a href="{{ url_for('home') }}">首页</a>
+            <a href="{{ url_for('admin_stats') }}">统计分析</a>
+            <a href="{{ url_for('admin_manage_teachers') }}">教师管理</a>
+            <a href="{{ url_for('admin_manage_courses') }}">课程管理</a>
+            <a href="{{ url_for('admin_manage_departments') }}">院系管理</a>
+        </div>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <!-- 搜索表单 -->
+        <div class="form-section">
+            <h2>搜索学生</h2>
+            <form method="get" style="display: flex; align-items: center;">
+                <div class="form-group" style="margin-right: 15px;">
+                    <input type="text" name="search" value="{{ search_query or '' }}" placeholder="输入学号或姓名" style="width: 300px;">
+                </div>
+                <div class="form-group">
+                    <button type="submit">搜索</button>
+                    <a href="{{ url_for('admin_manage_students') }}" style="margin-left: 10px;">清除搜索</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- 添加学生表单 -->
+        <div class="form-section">
+            <h2>添加学生</h2>
+            <form method="post">
+                <input type="hidden" name="action" value="add">
+                <div class="form-group">
+                    <label for="student_id">学号:</label>
+                    <input type="text" id="student_id" name="student_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="user_id">账号:</label>
+                    <input type="text" id="user_id" name="user_id" placeholder="默认使用学号">
+                </div>
+                <div class="form-group">
+                    <label for="password">初始密码:</label>
+                    <input type="password" id="password" name="password" placeholder="默认为123456">
+                </div>
+                <div class="form-group">
+                    <label for="name">姓名:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="sex">性别:</label>
+                    <select id="sex" name="sex" required>
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="date_of_birth">出生日期:</label>
+                    <input type="date" id="date_of_birth" name="date_of_birth" required>
+                </div>
+                <div class="form-group">
+                    <label for="native_place">籍贯:</label>
+                    <input type="text" id="native_place" name="native_place">
+                </div>
+                <div class="form-group">
+                    <label for="mobile_phone">手机号:</label>
+                    <input type="text" id="mobile_phone" name="mobile_phone">
+                </div>
+                <div class="form-group">
+                    <label for="dept_id">院系:</label>
+                    <select id="dept_id" name="dept_id" required>
+                        {% for dept in departments %}
+                            <option value="{{ dept.dept_id }}">{{ dept.dept_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit">添加学生</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 学生列表 -->
+        <div>
+            <h2>学生列表</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>学号</th>
+                        <th>姓名</th>
+                        <th>性别</th>
+                        <th>出生日期</th>
+                        <th>籍贯</th>
+                        <th>手机号</th>
+                        <th>院系</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.student_id }}</td>
+                        <td>{{ student.name }}</td>
+                        <td>{{ student.sex }}</td>
+                        <td>{{ student.date_of_birth }}</td>
+                        <td>{{ student.native_place }}</td>
+                        <td>{{ student.mobile_phone }}</td>
+                        <td>{{ student.dept_name or 'N/A' }}</td>
+                        <td>
+                            <form method="post" style="display: inline;" onsubmit="return confirm('确定要删除该学生吗？')">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                                <button type="submit" class="delete-btn">删除</button>
+                            </form>
+                            <button onclick="openResetModal('{{ student.student_id }}', '{{ student.name }}')" class="reset-btn">重置密码</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 重置密码模态框 -->
+        <div id="resetPasswordModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>重置学生密码</h3>
+                <form id="resetPasswordForm" method="post">
+                    <input type="hidden" name="action" value="reset_password">
+                    <div class="form-group">
+                        <label for="reset_student_id">学号:</label>
+                        <input type="text" id="reset_student_id" name="student_id" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="reset_student_name">姓名:</label>
+                        <input type="text" id="reset_student_name" name="student_name" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password">新密码:</label>
+                        <input type="password" id="new_password" name="new_password" placeholder="留空则使用默认密码123456">
+                    </div>
+                    <div class="form-group">
+                        <button type="submit">重置密码</button>
+                        <button type="button" onclick="closeResetModal()">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <script>
+            function openResetModal(studentId, studentName) {
+                document.getElementById('reset_student_id').value = studentId;
+                document.getElementById('reset_student_name').value = studentName;
+                document.getElementById('new_password').value = '';
+                document.getElementById('resetPasswordModal').style.display = 'block';
+            }
+            
+            function closeResetModal() {
+                document.getElementById('resetPasswordModal').style.display = 'none';
+            }
+            
+            // 点击模态框外部关闭模态框
+            window.onclick = function(event) {
+                var modal = document.getElementById('resetPasswordModal');
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            }
+            
+            // 点击关闭按钮关闭模态框
+            document.querySelector('.close').onclick = function() {
+                closeResetModal();
+            }
+        </script>
+    </div>
+</body>
+</html>

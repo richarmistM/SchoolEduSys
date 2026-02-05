@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>学生 - 选课与成绩查询</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; max-width: 1200px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background: #f0f0f0; }
+        button { padding: 5px 10px; background: #28a745; color: white; border: none; cursor: pointer; }
+        .drop-btn { background: #dc3545; }
+        .credit { color: #007bff; font-weight: bold; }
+        .error { color: red; margin: 10px 0; }
+        .semester-section {
+            margin: 30px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        .semester-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eee;
+        }
+        .semester-selector {
+            margin: 20px 0;
+        }
+        .semester-selector label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .semester-selector select {
+            padding: 5px 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h2>学生选课与成绩查询</h2>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+
+    <h3>可选课程</h3>
+    <table>
+        <tr>
+            <th>学期</th>
+            <th>课号</th>
+            <th>课程名</th>
+            <th>教师工号</th>
+            <th>教师姓名</th>
+            <th>上课时间</th>
+            <th>操作</th>
+        </tr>
+        {% for course in optional_courses %}
+        <tr>
+            <td>{{ course.semester }}</td>
+            <td>{{ course.course_id }}</td>
+            <td>{{ course.course_name }}</td>
+            <td>{{ course.staff_id }}</td>
+            <td>{{ course.teacher_name }}</td>
+            <td>{{ course.class_time }}</td>
+            <td>
+                <form method="post" style="display: inline;" onsubmit="return checkTimeConflict(event, '{{ course.class_time }}', '{{ course.semester }}', '{{ course.course_name }}')">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="semester" value="{{ course.semester }}">
+                    <input type="hidden" name="course_id" value="{{ course.course_id }}">
+                    <input type="hidden" name="staff_id" value="{{ course.staff_id }}">
+                    <button type="submit">选课</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h3>已选课程及成绩</h3>
+    <table>
+        <tr>
+            <th>学期</th>
+            <th>课号</th>
+            <th>课程名</th>
+            <th>教师姓名</th>
+            <th>上课时间</th>
+            <th>平时成绩</th>
+            <th>考试成绩</th>
+            <th>总评成绩</th>
+            {% if allow_drop %}
+            <th>操作</th>
+            {% endif %}
+        </tr>
+        {% for course in selected_courses %}
+        <tr>
+            <td>{{ course.semester }}</td>
+            <td>{{ course.course_id }}</td>
+            <td>{{ course.course_name }}</td>
+            <td>{{ course.teacher_name }}</td>
+            <td>{{ course.class_time }}</td>
+            <td>{{ course.normal_score or '未录入' }}</td>
+            <td>{{ course.test_score or '未录入' }}</td>
+            <td>{{ course.total_score or '未录入' }}</td>
+            {% if allow_drop %}
+            <td>
+                <form method="post" style="display: inline;" onsubmit="return confirm('确定要退选这门课程吗？')">
+                    <input type="hidden" name="action" value="drop">
+                    <input type="hidden" name="semester" value="{{ course.semester }}">
+                    <input type="hidden" name="course_id" value="{{ course.course_id }}">
+                    <input type="hidden" name="staff_id" value="{{ course.staff_id }}">
+                    <button type="submit" class="drop-btn">退课</button>
+                </form>
+            </td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </table>
+    {% if not selected_courses %}
+    <p>暂无已选课程</p>
+    {% endif %}
+
+    <a href="/home"><button>返回首页</button></a>
+
+    <script>
+        // 将模板数据存储到JavaScript变量中，用于时间冲突检测
+        const coursesData = {{ selected_courses | tojson }};
+        
+        // 检查时间冲突的函数
+        function checkTimeConflict(event, newCourseTime, newCourseSemester, courseName) {
+            // 获取当前学期的已选课程
+            const currentSemesterCourses = coursesData[newCourseSemester] || [];
+            
+            // 解析新课程的时间段
+            const newTimeDay = newCourseTime.substring(0, 2); // 例如："周一"
+            const newTimePeriod = newCourseTime.substring(3); // 例如："1-4节"
+            
+            // 检查是否存在时间冲突
+            for (let course of currentSemesterCourses) {
+                const existingTime = course.class_time;
+                const existingDay = existingTime.substring(0, 2);
+                const existingPeriod = existingTime.substring(3);
+                
+                // 检查是否是同一天
+                if (newTimeDay === existingDay) {
+                    // 检查时间段是否有冲突
+                    if (hasPeriodConflict(newTimePeriod, existingPeriod)) {
+                        event.preventDefault(); // 阻止表单提交
+                        alert(`时间冲突：课程"${courseName}"的时间"${newCourseTime}"与您已选课程"${course.course_name}"的时间"${existingTime}"冲突！`);
+                        return false;
+                    }
+                }
+            }
+            
+            // 如果没有冲突，确认是否继续选课
+            return confirm(`确定要选择课程"${courseName}"吗？上课时间：${newCourseTime}`);
+        }
+        
+        // 判断时间段是否有冲突
+        function hasPeriodConflict(period1, period2) {
+            // 解析时间段，例如"1-4节"解析为开始1，结束4
+            const parsePeriod = (period) => {
+                if (period.includes('-')) {
+                    const match = period.match(/(\d+)-(\d+)节/);
+                    if (match) {
+                        return [parseInt(match[1]), parseInt(match[2])];
+                    }
+                } else {
+                    // 处理单节课，如"第1节"解析为[1,1]
+                    const match = period.match(/第?(\d+)节/);
+                    if (match) {
+                        return [parseInt(match[1]), parseInt(match[1])];
+                    }
+                }
+                return [0, 0]; // 解析失败返回默认值
+            };
+            
+            const [start1, end1] = parsePeriod(period1);
+            const [start2, end2] = parsePeriod(period2);
+            
+            // 如果时间段有重叠，返回true
+            return start1 <= end2 && start2 <= end1 && (start1 !== 0 || end1 !== 0);
+        }
+    </script>
+</body>
+</html>

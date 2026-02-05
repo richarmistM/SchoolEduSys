@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>管理员 - 统计分析</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        table { border-collapse: collapse; width: 60%; margin: 20px 0; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background: #f0f0f0; }
+        button { padding: 5px 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .additional-stats {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .additional-stats h3 {
+            margin-top: 0;
+        }
+        .additional-stats a {
+            display: inline-block;
+            margin: 5px 10px;
+            padding: 8px 15px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .additional-stats a:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h2>教务统计分析</h2>
+
+    <h3>各院系学生人数统计</h3>
+    <table>
+        <tr>
+            <th>院系名称</th>
+            <th>学生人数</th>
+        </tr>
+        {% for item in dept_student_stats %}
+        <tr>
+            <td>{{ item.dept_name }}</td>
+            <td>{{ item.student_count }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h3>各课程平均成绩统计</h3>
+    <table>
+        <tr>
+            <th>课程名称</th>
+            <th>平均成绩</th>
+        </tr>
+        {% for item in course_score_stats %}
+        <tr>
+            <td>{{ item.course_name }}</td>
+            <td>{{ "%.2f"|format(item.avg_score) }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="additional-stats">
+        <h3>更多统计功能</h3>
+        <a href="{{ url_for('admin_teacher_course_stats') }}">教师课程及选课统计</a>
+    </div>
+
+    <a href="/home"><button>返回首页</button></a>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>课程详细信息管理</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .section { margin-bottom: 40px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: inline-block; width: 150px; text-align: right; margin-right: 10px; }
+        input, select { padding: 5px; width: 200px; }
+        button { padding: 8px 15px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .remove-btn { background: #d9534f; }
+        .remove-btn:hover { background: #c9302c; }
+        .change-btn { background: #5bc0de; }
+        .change-btn:hover { background: #31b0d5; }
+        .error { color: red; margin: 10px 0; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a { margin: 0 10px; text-decoration: none; color: #007cba; }
+        .course-info { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>课程详细信息管理</h1>
+            <p>欢迎，用户ID: {{ user_id if user_id else session['user_id'] }}</p>
+        </div>
+        
+        <div class="nav">
+            <a href="{{ url_for('home') }}">首页</a>
+            <a href="{{ url_for('admin_manage_courses') }}">课程管理</a>
+        </div>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <!-- 课程信息 -->
+        <div class="course-info">
+            <h2>课程信息</h2>
+            <p><strong>课程名称:</strong> {{ course_info.course_name }}</p>
+            <p><strong>当前授课教师:</strong> {{ teacher_info.teacher_name }}</p>
+            <p><strong>学期:</strong> {{ semester }}</p>
+            <p><strong>学分:</strong> {{ course_info.credit }}</p>
+            <p><strong>学时:</strong> {{ course_info.credit_hours }}</p>
+            <p><strong>开课院系:</strong> {{ course_info.dept_name }}</p>
+        </div>
+
+        <!-- 更换教师 -->
+        <div class="section">
+            <h2>更换授课教师</h2>
+            <form method="post">
+                <input type="hidden" name="action" value="change_teacher">
+                <div class="form-group">
+                    <label for="new_teacher_id">新授课教师:</label>
+                    <select id="new_teacher_id" name="new_teacher_id" required>
+                        {% for teacher in all_teachers %}
+                            <option value="{{ teacher.staff_id }}" {% if teacher.staff_id == teacher_info.staff_id %}selected{% endif %}>
+                                {{ teacher.teacher_name }} ({{ teacher.staff_id }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit">更换教师</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 添加学生 -->
+        <div class="section">
+            <h2>添加学生到课程</h2>
+            <form method="post">
+                <input type="hidden" name="action" value="add_student">
+                <div class="form-group">
+                    <label for="student_id">选择学生:</label>
+                    <select id="student_id" name="student_id" required>
+                        {% for student in available_students %}
+                            <option value="{{ student.student_id }}">{{ student.student_name }} ({{ student.student_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit">添加学生</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 已选学生列表 -->
+        <div class="section">
+            <h2>已选学生列表</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>学号</th>
+                        <th>姓名</th>
+                        <th>平时成绩</th>
+                        <th>考试成绩</th>
+                        <th>总评成绩</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in enrolled_students %}
+                    <tr>
+                        <td>{{ student.student_id }}</td>
+                        <td>{{ student.student_name }}</td>
+                        <td>{{ student.normal_score or 'N/A' }}</td>
+                        <td>{{ student.test_score or 'N/A' }}</td>
+                        <td>{{ student.total_score or 'N/A' }}</td>
+                        <td>
+                            <form method="post" style="display: inline;" onsubmit="return confirm('确定要将该学生从课程中移除吗？')">
+                                <input type="hidden" name="action" value="remove_student">
+                                <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                                <button type="submit" class="remove-btn">移除学生</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
